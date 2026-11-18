@@ -1,4 +1,5 @@
 """Burnout Check-in: run locally with `streamlit run app.py`."""
+import datetime
 import json
 
 import joblib
@@ -8,7 +9,71 @@ import streamlit as st
 from fusion import combine
 from journal import analyze_journal, keyword_crisis
 
-st.set_page_config(page_title="Burnout Check-in", page_icon="🌱", layout="centered")
+st.set_page_config(page_title="Burnout Check-in", page_icon="🌊", layout="centered")
+
+def apply_ocean_theme():
+    st.markdown(
+        """
+        <style>
+        .stApp {
+            background: linear-gradient(180deg, #D3E1F9 0%, #A4C3E8 100%);
+            background-attachment: fixed;
+        }
+        h1, h2, h3, h4, label, p { color: #2D3E50; }
+
+        /* Banner */
+        .hero {
+            background: linear-gradient(135deg, #2D3E50 0%, #4C86B6 100%);
+            border-radius: 20px;
+            padding: 28px 28px 22px;
+            margin-bottom: 18px;
+        }
+        .hero h1 { color: #FFFFFF; margin: 0 0 6px; padding: 0; }
+        .hero p  { color: #D3E1F9; margin: 0; font-size: 0.95rem; }
+
+        /* Form as a card */
+        [data-testid="stForm"] {
+            background: rgba(255, 255, 255, 0.55);
+            border: 1px solid #7BA9DB;
+            border-radius: 18px;
+            padding: 1.2rem;
+        }
+
+        /* Submit button */
+        [data-testid="stFormSubmitButton"] button {
+            background: #2D3E50;
+            color: #FFFFFF;
+            border: none;
+            border-radius: 999px;
+            padding: 0.5rem 1.6rem;
+        }
+        [data-testid="stFormSubmitButton"] button:hover {
+            background: #4C86B6;
+            color: #FFFFFF;
+        }
+
+        /* Quote card */
+        .stMarkdown blockquote {
+            background: rgba(255, 255, 255, 0.65);
+            border-left: 5px solid #4C86B6;
+            border-radius: 0 14px 14px 0;
+            padding: 14px 18px;
+            color: #2D3E50;
+        }
+
+        /* Expander */
+        [data-testid="stExpander"] {
+            background: rgba(255, 255, 255, 0.45);
+            border: 1px solid #7BA9DB;
+            border-radius: 14px;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
+apply_ocean_theme()
 
 LABELS = {
     "sleep_hours": "Sleep (hours per night)",
@@ -48,10 +113,15 @@ def show_crisis_help():
     )
 
 
-st.title("🌱 Burnout Check-in")
-st.caption(
-    "A 1-minute wellbeing check-in. This is not a diagnosis or a clinical tool. "
-    "Nothing you type is stored."
+st.markdown(
+    f"""
+    <div class="hero">
+      <h1>🌊 Daily Journal</h1>
+      <p>{datetime.date.today():%A, %B %d} · Let the day wash out. This is a private space,
+      not a diagnosis or a clinical tool, and nothing you type is stored.</p>
+    </div>
+    """,
+    unsafe_allow_html=True,
 )
 
 with st.form("checkin"):
@@ -119,10 +189,4 @@ if submitted:
             "- Campus counseling is free for most students, and you don't need to be in crisis to go"
         )
 
-    with st.expander("How this works"):
-        st.write(
-            "Your slider answers go into a model trained on a large (likely synthetic) student "
-            "dataset. It explains about half of the variation in burnout scores, so treat the "
-            "number as a rough signal. Your journal is read by an AI model looking for "
-            "burnout-related language. The two are combined with simple rules."
-        )
+    
