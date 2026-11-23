@@ -1,6 +1,7 @@
 """Daily Journal — Burnout Check-in: run locally with `streamlit run app.py`."""
 import datetime
 import html
+import io
 import json
 import math
 
@@ -319,12 +320,15 @@ def init_state():
     if "history" not in st.session_state:
         st.session_state["history"] = []
     if "monthly_baseline" not in st.session_state:
-        # Starts at 6 so your first demo check-in immediately celebrates "7 check-ins this month"
         st.session_state["monthly_baseline"] = 6
     if "journal_entry" not in st.session_state:
         st.session_state["journal_entry"] = ""
     if "latest_result" not in st.session_state:
         st.session_state["latest_result"] = None
+    if st.session_state.get("pending_transcript"):
+        current = st.session_state.get("journal_entry", "").strip()
+        transcript = st.session_state.pop("pending_transcript").strip()
+        st.session_state["journal_entry"] = f"{current} {transcript}".strip() if current else transcript
     for feat in FEATURES:
         key = f"slider_{feat}"
         if key not in st.session_state:
@@ -337,6 +341,27 @@ init_state()
 def append_prompt(starter: str):
     current = st.session_state.get("journal_entry", "").strip()
     st.session_state["journal_entry"] = f"{current}\n{starter}" if current else starter
+
+
+def transcribe_audio(audio_bytes: bytes) -> tuple[str | None, str | None]:
+    """Convert recorded WAV audio bytes to text using SpeechRecognition."""
+    try:
+        import speech_recognition as sr
+    except ImportError:
+        return None, "Voice-to-text requires `SpeechRecognition`. Add `SpeechRecognition` to your `requirements.txt` and redeploy."
+
+    recognizer = sr.Recognizer()
+    try:
+        with sr.AudioFile(io.BytesIO(audio_bytes)) as source:
+            audio_data = recognizer.record(source)
+        text = recognizer.recognize_google(audio_data)
+        return text, None
+    except sr.UnknownValueError:
+        return None, "Couldn't make out any words—try speaking a bit closer to your mic."
+    except sr.RequestError:
+        return None, "Speech-to-text service is temporarily unreachable. Please try again or type your reflection."
+    except Exception:
+        return None, "Couldn't read that recording. Please try recording again."
 
 
 def render_consistency_banner(total_count: int) -> str:
@@ -655,19 +680,17 @@ with tab_checkin:
     )
 
     if hasattr(st, "audio_input"):
-        with st.expander("🎙️ Voice Vent (say it out loud instead of typing)"):
-            vent_mode = st.radio(
-                "What should happen to your voice note?",
-                ["Vent & shred (let it go immediately)", "Keep & reflect while writing"],
-                horizontal=True,
-            )
-            audio_clip = st.audio_input("Record a quick voice vent")
+        with st.expander("🎙️ Voice-to-Text (speak your reflection instead of typing)"):
+            audio_clip = st.audio_input("Record your reflection")
             if audio_clip is not None:
-                if vent_mode.startswith("Vent & shred"):
-                    if st.button("🗑️ Shred Voice Vent Now", type="secondary"):
-                        st.success("Voice vent shredded and cleared from memory. Take a deep breath.")
-                else:
-                    st.caption("Play back your note above and add any key thoughts into the reflection box before checking in.")
+                if st.button("✨ Transcribe & add to journal", type="secondary"):
+                    with st.spinner("Converting your voice to text..."):
+                        text, err = transcribe_audio(audio_clip.getvalue())
+                    if err:
+                        st.warning(err)
+                    elif text:
+                        st.session_state["pending_transcript"] = text
+                        st.rerun()
 
     submitted = st.button("Check in", type="primary")
 
@@ -722,7 +745,7 @@ with tab_checkin:
         st.session_state["history"].append(result_record)
         st.rerun()
 
-    # --- Smarter Check-In Results (Replacing Static Advice) ---
+    # --- Smarter Check-In Results ---
     if st.session_state["latest_result"] is not None:
         res = st.session_state["latest_result"]
         st.markdown(render_stress_gauge_svg(res["composite_score"], res["level"]), unsafe_allow_html=True)
