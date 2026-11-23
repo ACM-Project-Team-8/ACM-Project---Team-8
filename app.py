@@ -3,7 +3,6 @@ import datetime
 import html
 import json
 import math
-import re
 
 import joblib
 import pandas as pd
@@ -258,8 +257,7 @@ TIME_MATCHED_ACTIONS = {
     },
     "social": {
         "⚡ 2 mins": (
-            "Send one zero-pressure text to someone you like (grab a copy-paste template "
-            "in the Support & Reset tab)—even a tiny check-in breaks isolation."
+            "Send one zero-pressure text to someone you like—even a tiny check-in breaks isolation."
         ),
         "☕ 15 mins": (
             "Work, study, or grab coffee in a shared space (a cafe, library, or lounge), "
@@ -414,29 +412,6 @@ def get_slider_badge(feat: str, val: float) -> str:
             return "⛅ Tight budget"
         return "⛈️ Heavy financial strain"
     return "⛅ Checked"
-
-
-def parse_ics_workload(raw_bytes: bytes) -> int:
-    """Count upcoming 7-day events (or total events if undated) from a .ics file."""
-    text = raw_bytes.decode("utf-8", errors="ignore")
-    events = re.findall(r"BEGIN:VEVENT(.*?)END:VEVENT", text, flags=re.S)
-    if not events:
-        return 0
-    today = datetime.date.today()
-    horizon = today + datetime.timedelta(days=7)
-    upcoming = 0
-    dated_found = 0
-    for ev in events:
-        m = re.search(r"DTSTART[^:]*:(\d{8})", ev)
-        if m:
-            dated_found += 1
-            try:
-                d = datetime.datetime.strptime(m.group(1), "%Y%m%d").date()
-                if today <= d <= horizon:
-                    upcoming += 1
-            except ValueError:
-                pass
-    return upcoming if dated_found > 0 else min(len(events), 25)
 
 
 def identify_top_drain(values: dict) -> tuple[str, str]:
@@ -644,19 +619,6 @@ tab_checkin, tab_trend, tab_support, tab_snapshot = st.tabs(
 # TAB 1: DAILY CHECK-IN
 # ==============================================================================
 with tab_checkin:
-    with st.expander("📅 Optional: Auto-fill workload from your calendar (.ics)"):
-        st.caption("Upload a calendar export from Google Calendar, Apple Calendar, or Canvas to estimate this week's schedule load.")
-        ics_file = st.file_uploader("Choose a .ics file", type=["ics"], label_visibility="collapsed")
-        if ics_file is not None:
-            event_count = parse_ics_workload(ics_file.getvalue())
-            st.write(f"Detected **{event_count}** scheduled events/deadlines over the next 7 days.")
-            if st.button("Apply schedule load to sliders", type="secondary"):
-                est_pressure = min(float(ranges["exam_pressure"]["max"]), max(float(ranges["exam_pressure"]["min"]), 3.2 + event_count * 0.42))
-                est_study = min(float(ranges["study_hours_per_day"]["max"]), max(float(ranges["study_hours_per_day"]["min"]), 2.5 + event_count * 0.32))
-                st.session_state["slider_exam_pressure"] = round(est_pressure, 1)
-                st.session_state["slider_study_hours_per_day"] = round(est_study, 1)
-                st.rerun()
-
     st.subheader("Your week at a glance")
     c1, c2 = st.columns(2)
     values = {}
@@ -674,7 +636,7 @@ with tab_checkin:
             key=f"slider_{feat}",
         )
 
-    st.markdown("#### Quick reflection (optional)")
+    st.markdown("#### Quick reflection")
     chip_cols = st.columns(len(PROMPT_CHIPS))
     for idx, (chip_label, starter_text) in enumerate(PROMPT_CHIPS):
         chip_cols[idx].button(
@@ -889,12 +851,7 @@ with tab_support:
     st.write("Follow the ocean orb: **Inhale 4s** as it expands · **Hold 4s** · **Exhale 4s** as it softens · **Hold 4s**.")
     st.markdown('<div class="breathe-orb"></div>', unsafe_allow_html=True)
 
-    st.markdown("#### 2. Low-Energy Connection (Copy-Paste a Text)")
-    st.write("Too drained to figure out what to say? Copy one of these and send it to someone you trust:")
-    st.code("Hey, this week has been a lot—do you have 10 minutes to grab food or walk together? No pressure to talk about work.", language=None)
-    st.code("I'm running on low battery today and just wanted to check in with someone friendly. How's your week going?", language=None)
-
-    st.markdown("#### 3. Free & Accessible Support Anywhere")
+    st.markdown("#### 2. Free & Accessible Support Anywhere")
     if active_drain == "financial":
         st.info("Highlighted for your check-in: **211.org** connects you to free local help with bills, food, housing, and stress.")
     elif active_drain == "workload":
@@ -961,3 +918,4 @@ with tab_snapshot:
             mime="text/plain",
             type="secondary",
         )
+```[cite: 7]
