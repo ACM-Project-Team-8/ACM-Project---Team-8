@@ -918,4 +918,3 @@ with tab_snapshot:
             mime="text/plain",
             type="secondary",
         )
-```[cite: 7]
