@@ -1,4 +1,4 @@
-"""Daily Journal — Burnout Check-in: run locally with `streamlit run app.py`."""
+"""Wavecheck: a burnout check-in. Run locally with `streamlit run app.py`."""
 import datetime
 import html
 import io
@@ -12,7 +12,7 @@ import streamlit as st
 from fusion import combine
 from journal import analyze_journal, keyword_crisis
 
-st.set_page_config(page_title="Daily Journal · Burnout Check-in", page_icon="🌊", layout="centered")
+st.set_page_config(page_title="Wavecheck · Burnout Check-in", page_icon="🌊", layout="centered")
 
 
 def apply_ocean_theme():
@@ -625,7 +625,7 @@ def show_crisis_help():
 st.markdown(
     f"""
     <div class="hero">
-      <h1>🌊 Daily Journal</h1>
+      <h1>🌊 Wavecheck</h1>
       <p>{datetime.date.today():%A, %B %d} · Let the day wash out. This is a private space,
       not a diagnosis or a clinical tool, and nothing you type is stored on any server.</p>
     </div>
@@ -913,7 +913,7 @@ with tab_snapshot:
         unique_prot = list(dict.fromkeys(all_prot)) or ["Consistent self-check-ins"]
 
         snapshot_text = (
-            f"DAILY JOURNAL — SUPPORT SNAPSHOT ({datetime.date.today():%B %d, %Y})\n"
+            f"WAVECHECK: SUPPORT SNAPSHOT ({datetime.date.today():%B %d, %Y})\n"
             f"Check-ins summarized: {len(hist)}\n"
             f"Most recent status: {hist[-1]['status']}\n\n"
             f"TOP STRESS DRIVERS:\n- " + "\n- ".join(unique_drains) + "\n\n"
